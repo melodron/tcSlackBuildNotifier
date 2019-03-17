@@ -4,10 +4,10 @@
     <groupId>petegoo.teamcity.plugins.tcslacknotifications</groupId>
     <artifactId>tcslackbuildnotifier</artifactId>
     <properties>
-        <teamcity-version>9.1.7</teamcity-version>
+        <teamcity-version>2018.2.3</teamcity-version>
         <majorVersion>1</majorVersion>
         <minorVersion>4</minorVersion>
-        <patchVersion>7</patchVersion>
+        <patchVersion>8</patchVersion>
         <currentVersion>${majorVersion}.${minorVersion}.${patchVersion}</currentVersion>
     </properties>
     <version>${currentVersion}</version>
