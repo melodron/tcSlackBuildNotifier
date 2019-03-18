@@ -1,5 +1,6 @@
 package slacknotifications.teamcity;
 
+import jetbrains.buildServer.parameters.ParametersProvider;
 import jetbrains.buildServer.responsibility.ResponsibilityEntry;
 import jetbrains.buildServer.responsibility.TestNameResponsibilityEntry;
 import jetbrains.buildServer.serverSide.*;
@@ -18,6 +19,8 @@ import slacknotifications.teamcity.settings.SlackNotificationProjectSettings;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 
 /**
@@ -120,10 +123,60 @@ public class SlackNotificationListener extends BuildServerAdapter {
 							this.hasBuildChangedHistoricalState(sRunningBuild)));
 					slackNotificationConfigWrapper.slackNotification.setPayload(myManager.buildFinished(sRunningBuild, getPreviousNonPersonalBuild(sRunningBuild)));;
 				}
-				
+				if (sRunningBuild != null)
+					replaceByBuildParameters(sRunningBuild, slackNotificationConfigWrapper.slackNotification);
 				doPost(slackNotificationConfigWrapper.slackNotification);
 				//Loggers.ACTIVITIES.debug("SlackNotificationListener :: " + myManager.getFormat(slackNotificationConfigWrapper.whc.getPayloadFormat()).getFormatDescription());
 	    	}
+	}
+
+	/**
+	 * Replace slacknotification.channel & slacknotification.username with a build parameter if needed
+	 * It is ugly to make this replace here, but it is convenient and enough for my needs
+	 * @param sRunningBuild
+	 * @param slackNotification
+	 */
+	private void replaceByBuildParameters(SRunningBuild sRunningBuild, SlackNotification slackNotification) {
+		ParametersProvider parametersProvider = sRunningBuild.getParametersProvider();
+
+		if (parametersProvider == null) return;
+
+		String channel = slackNotification.getChannel();
+		if (channel != null) {
+			String buildParameter = fetchBuildParameter(channel);
+
+			if (buildParameter != null) {
+				String buildParameterValue = parametersProvider.get(buildParameter);
+
+				if (buildParameterValue != null)
+					slackNotification.setChannel(buildParameterValue);
+			}
+		}
+
+		String botName = slackNotification.getBotName();
+		if (botName != null)
+		{
+			String buildParameter = fetchBuildParameter(botName);
+
+			if (buildParameter != null) {
+				String buildParameterValue = parametersProvider.get(buildParameter);
+
+				if (buildParameterValue != null)
+					slackNotification.setBotName(buildParameterValue);
+			}
+		}
+	}
+
+	private String fetchBuildParameter(String value)
+	{
+		final Pattern pattern = Pattern.compile("%([A-Za-z0-9.]+)%");
+		Matcher matcher = pattern.matcher(value);
+		Boolean res = matcher.find();
+
+		if (res) {
+			return matcher.group(1);
+		}
+		return null;
 	}
 
 	/** 
